@@ -3,9 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/components/ui/button';
-import { Input } from '@/shared/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,10 +26,6 @@ import {
   User,
   LogOut,
   HelpCircle,
-  Command,
-  Sun,
-  Moon,
-  Laptop,
   Grid3x3,
   Activity,
   CreditCard,
