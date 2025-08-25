@@ -1,7 +1,7 @@
 'use client';
 
 import { Moon, Sun, Monitor } from 'lucide-react';
-import { useThemeStore } from '@/shared/stores/theme.store';
+import { useThemeActions } from '@/shared/stores/ui-store';
 import { Button } from '@/shared/components/ui/button';
 import {
   DropdownMenu,
@@ -11,7 +11,7 @@ import {
 } from '@/shared/components/ui/dropdown-menu';
 
 export function ThemeSwitcher() {
-  const setTheme = useThemeStore((state) => state.setTheme);
+  const { setTheme } = useThemeActions();
 
   return (
     <DropdownMenu>

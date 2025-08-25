@@ -1,33 +1,36 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useThemeStore } from '@/shared/stores/theme.store';
+import { useTheme } from '@/shared/stores/ui-store';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const theme = useThemeStore((state) => state.theme);
+  const theme = useTheme();
 
   useEffect(() => {
-    // Apply theme on mount and when it changes
     const root = document.documentElement;
-    
+
+    // Remove both classes first to ensure clean state
+    root.classList.remove('light', 'dark');
+
     if (theme === 'system') {
+      // Apply system theme
       const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
         ? 'dark'
         : 'light';
-      root.classList.toggle('dark', systemTheme === 'dark');
-      
+      root.classList.add(systemTheme);
+
       // Listen for system theme changes
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       const handleChange = (e: MediaQueryListEvent) => {
-        if (theme === 'system') {
-          root.classList.toggle('dark', e.matches);
-        }
+        root.classList.remove('light', 'dark');
+        root.classList.add(e.matches ? 'dark' : 'light');
       };
-      
+
       mediaQuery.addEventListener('change', handleChange);
       return () => mediaQuery.removeEventListener('change', handleChange);
     } else {
-      root.classList.toggle('dark', theme === 'dark');
+      // Apply explicit theme
+      root.classList.add(theme);
       return undefined;
     }
   }, [theme]);

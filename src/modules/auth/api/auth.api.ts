@@ -1,144 +1,101 @@
 import { apiClient } from '@/shared/lib/api/config';
-import { handleApiResponse, type ApiResult } from '@/shared/lib/api/client';
-import { env } from '@/config/env';
+import { handleApiResponse } from '@/shared/lib/api/client';
+import { validateResponse } from '@/shared/lib/api/validators';
+import {
+  createMockWrapper,
+  createVoidMockWrapper,
+  mockDelays,
+} from '@/shared/lib/api/mock-wrapper';
+import { authMockHandlers } from './auth.api.mock';
 import type {
   LoginRequest,
-  LoginResponse,
-  RefreshTokenResponse,
   RegisterRequest,
-  RegisterResponse,
   ForgotPasswordRequest,
   ResetPasswordRequest,
   VerifyEmailRequest,
 } from './types';
-
-// Mock data for development
-const mockUser = {
-  id: 'user-123',
-  email: 'user@example.com',
-  name: 'Test User',
-  avatar: '/avatar.jpg',
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-};
-
-const mockTokens = {
-  accessToken: 'mock-jwt-token-' + Math.random().toString(36).substring(7),
-  refreshToken: 'mock-refresh-token-' + Math.random().toString(36).substring(7),
-};
+import {
+  loginResponseSchema,
+  refreshTokenResponseSchema,
+  registerResponseSchema,
+  userSchema,
+} from './schemas';
 
 export const authApi = {
   // Login user
-  login: async (data: LoginRequest): Promise<ApiResult<LoginResponse>> => {
-    // Use mock response in development
-    if (env.NEXT_PUBLIC_USE_MOCK_API) {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Store email for consistency across mock API calls
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('mock_user_email', data.email);
-      }
-      
-      // Return mock successful login for any email/password
-      return {
-        success: true,
-        data: {
-          ...mockTokens,
-          user: {
-            ...mockUser,
-            email: data.email, // Use the email from the form
-          },
-        },
-      };
-    }
-    
-    return handleApiResponse(() => 
-      apiClient.post<LoginResponse>('auth/login', { json: data })
-    );
-  },
-  
+  login: createMockWrapper(
+    authMockHandlers.login,
+    async (data: LoginRequest) =>
+      handleApiResponse(async () => {
+        const response = await apiClient.post('auth/login', { json: data });
+        return validateResponse(response, loginResponseSchema, 'login');
+      }),
+    { delay: mockDelays.standard }
+  ),
+
   // Logout user
-  logout: async (): Promise<ApiResult<void>> => {
-    if (env.NEXT_PUBLIC_USE_MOCK_API) {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      // Clear mock user data
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('mock_user_email');
-      }
-      return { success: true, data: undefined };
-    }
-    
-    return handleApiResponse(() => 
-      apiClient.post<void>('auth/logout')
-    );
-  },
-  
+  logout: createVoidMockWrapper(
+    authMockHandlers.logout,
+    async () => handleApiResponse(() => apiClient.post<void>('auth/logout')),
+    { delay: mockDelays.fast }
+  ),
+
   // Refresh access token
-  refresh: async (refreshToken: string): Promise<ApiResult<RefreshTokenResponse>> => {
-    if (env.NEXT_PUBLIC_USE_MOCK_API) {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      return {
-        success: true,
-        data: {
-          accessToken: 'mock-jwt-token-refreshed-' + Math.random().toString(36).substring(7),
-        },
-      };
-    }
-    
-    return handleApiResponse(() => 
-      apiClient.post<RefreshTokenResponse>('auth/refresh', { 
-        json: { refreshToken } 
-      })
-    );
-  },
-  
+  refresh: createMockWrapper(
+    authMockHandlers.refresh,
+    async (refreshToken: string) =>
+      handleApiResponse(async () => {
+        const response = await apiClient.post('auth/refresh', {
+          json: { refreshToken },
+        });
+        return validateResponse(response, refreshTokenResponseSchema, 'refresh token');
+      }),
+    { delay: mockDelays.fast }
+  ),
+
   // Register new user
-  register: async (data: RegisterRequest): Promise<ApiResult<RegisterResponse>> => {
-    return handleApiResponse(() => 
-      apiClient.post<RegisterResponse>('auth/register', { json: data })
-    );
-  },
-  
+  register: createMockWrapper(
+    authMockHandlers.register,
+    async (data: RegisterRequest) =>
+      handleApiResponse(async () => {
+        const response = await apiClient.post('auth/register', { json: data });
+        return validateResponse(response, registerResponseSchema, 'register');
+      }),
+    { delay: mockDelays.slow }
+  ),
+
   // Request password reset
-  forgotPassword: async (data: ForgotPasswordRequest): Promise<ApiResult<void>> => {
-    return handleApiResponse(() => 
-      apiClient.post<void>('auth/forgot-password', { json: data })
-    );
-  },
-  
+  forgotPassword: createVoidMockWrapper(
+    authMockHandlers.forgotPassword,
+    async (data: ForgotPasswordRequest) =>
+      handleApiResponse(() => apiClient.post<void>('auth/forgot-password', { json: data })),
+    { delay: mockDelays.standard }
+  ),
+
   // Reset password with token
-  resetPassword: async (data: ResetPasswordRequest): Promise<ApiResult<void>> => {
-    return handleApiResponse(() => 
-      apiClient.post<void>('auth/reset-password', { json: data })
-    );
-  },
-  
+  resetPassword: createVoidMockWrapper(
+    authMockHandlers.resetPassword,
+    async (data: ResetPasswordRequest) =>
+      handleApiResponse(() => apiClient.post<void>('auth/reset-password', { json: data })),
+    { delay: mockDelays.standard }
+  ),
+
   // Verify email address
-  verifyEmail: async (data: VerifyEmailRequest): Promise<ApiResult<void>> => {
-    return handleApiResponse(() => 
-      apiClient.post<void>('auth/verify-email', { json: data })
-    );
-  },
-  
+  verifyEmail: createVoidMockWrapper(
+    authMockHandlers.verifyEmail,
+    async (data: VerifyEmailRequest) =>
+      handleApiResponse(() => apiClient.post<void>('auth/verify-email', { json: data })),
+    { delay: mockDelays.fast }
+  ),
+
   // Get current user profile
-  getMe: async (): Promise<ApiResult<LoginResponse['user']>> => {
-    if (env.NEXT_PUBLIC_USE_MOCK_API) {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      const mockEmail = typeof window !== 'undefined' 
-        ? localStorage.getItem('mock_user_email') || 'user@example.com'
-        : 'user@example.com';
-      return {
-        success: true,
-        data: {
-          ...mockUser,
-          email: mockEmail,
-        },
-      };
-    }
-    
-    return handleApiResponse(() => 
-      apiClient.get<LoginResponse['user']>('auth/me')
-    );
-  },
+  getMe: createMockWrapper(
+    authMockHandlers.getMe,
+    async () =>
+      handleApiResponse(async () => {
+        const response = await apiClient.get('auth/me');
+        return validateResponse(response, userSchema, 'user profile');
+      }),
+    { delay: mockDelays.fast }
+  ),
 };

@@ -5,15 +5,21 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useState, type ReactNode } from 'react';
 import { Toaster } from '@/shared/components/ui/toaster';
 import { ThemeProvider } from '@/shared/components/theme-provider';
-import { AuthProvider } from '@/modules/auth/context/auth-context';
 import { I18nProvider } from '@/shared/lib/i18n/client';
 import { AnnouncerProvider } from '@/shared/lib/accessibility/announcer';
+import { AuthInitializer } from '@/modules/auth';
 import type { Locale } from '@/shared/lib/i18n/config';
+import { GlobalErrorBoundary } from './global-error-boundary';
 
 interface ProvidersProps {
   children: ReactNode;
   locale: Locale;
-  messages: Record<string, any>;
+  messages: Record<string, string | Record<string, string>>;
+}
+
+interface ApiError {
+  status?: number;
+  message?: string;
 }
 
 export default function Providers({ children, locale, messages }: ProvidersProps) {
@@ -24,9 +30,10 @@ export default function Providers({ children, locale, messages }: ProvidersProps
           queries: {
             staleTime: 5 * 60 * 1000, // 5 minutes - data considered fresh
             gcTime: 10 * 60 * 1000, // 10 minutes - garbage collection time
-            retry: (failureCount, error: any) => {
+            retry: (failureCount, error: unknown) => {
               // Don't retry on 4xx errors
-              if (error?.status >= 400 && error?.status < 500) {
+              const apiError = error as ApiError;
+              if (apiError?.status && apiError.status >= 400 && apiError.status < 500) {
                 return false;
               }
               // Retry up to 2 times for other errors
@@ -38,9 +45,10 @@ export default function Providers({ children, locale, messages }: ProvidersProps
             refetchOnReconnect: 'always',
           },
           mutations: {
-            retry: (failureCount, error: any) => {
+            retry: (failureCount, error: unknown) => {
               // Don't retry on 4xx errors
-              if (error?.status >= 400 && error?.status < 500) {
+              const apiError = error as ApiError;
+              if (apiError?.status && apiError.status >= 400 && apiError.status < 500) {
                 return false;
               }
               // Retry once for other errors
@@ -53,18 +61,20 @@ export default function Providers({ children, locale, messages }: ProvidersProps
   );
 
   return (
-    <I18nProvider initialLocale={locale} initialMessages={messages}>
+    <GlobalErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
+        <I18nProvider initialLocale={locale} initialMessages={messages}>
           <ThemeProvider>
-            <AnnouncerProvider>
-              {children}
-              <Toaster />
-              <ReactQueryDevtools initialIsOpen={false} />
-            </AnnouncerProvider>
+            <AuthInitializer>
+              <AnnouncerProvider>
+                {children}
+                <Toaster />
+                <ReactQueryDevtools initialIsOpen={false} />
+              </AnnouncerProvider>
+            </AuthInitializer>
           </ThemeProvider>
-        </AuthProvider>
+        </I18nProvider>
       </QueryClientProvider>
-    </I18nProvider>
+    </GlobalErrorBoundary>
   );
 }

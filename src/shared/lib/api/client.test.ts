@@ -42,9 +42,9 @@ describe('API Client', () => {
     it('should add authorization header when token is available', async () => {
       const mockCreate = vi.mocked(ky.create);
       const mockRequest = new Request('https://api.example.com/test');
-      
+
       const getAccessToken = vi.fn().mockResolvedValue('bearer-token');
-      
+
       createApi({
         baseUrl: 'https://api.example.com',
         getAccessToken,
@@ -53,7 +53,7 @@ describe('API Client', () => {
       // Get the hooks that were passed to ky.create
       const createCall = mockCreate.mock.calls[0][0];
       const beforeRequestHook = createCall?.hooks?.beforeRequest?.[0];
-      
+
       if (beforeRequestHook) {
         await beforeRequestHook(mockRequest, {} as any);
         expect(mockRequest.headers.get('Authorization')).toBe('Bearer bearer-token');
@@ -63,10 +63,10 @@ describe('API Client', () => {
     it('should handle 401 responses', async () => {
       const mockCreate = vi.mocked(ky.create);
       const onUnauthorized = vi.fn();
-      
+
       const mockResponse = new Response(null, { status: 401 });
       const mockRequest = new Request('https://api.example.com/test');
-      
+
       createApi({
         baseUrl: 'https://api.example.com',
         onUnauthorized,
@@ -75,7 +75,7 @@ describe('API Client', () => {
       // Get the hooks that were passed to ky.create
       const createCall = mockCreate.mock.calls[0][0];
       const afterResponseHook = createCall?.hooks?.afterResponse?.[0];
-      
+
       if (afterResponseHook) {
         await afterResponseHook(mockRequest, {} as any, mockResponse);
         expect(onUnauthorized).toHaveBeenCalled();
@@ -105,7 +105,7 @@ describe('API Client', () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error.message).toBe('API Error');
-        expect(result.error.code).toBe('UNKNOWN');
+        expect(result.error.code).toBe('UNKNOWN_ERROR');
       }
     });
 
@@ -124,25 +124,11 @@ describe('API Client', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.code).toBe('404');
+        expect(result.error.code).toBe('NOT_FOUND');
         expect(result.error.message).toBe('Resource not found');
         expect(result.error.details).toEqual({ detail: 'Not found' });
         expect(result.error.requestId).toBe('req-123');
       }
-    });
-  });
-
-  describe('Circuit Breaker', () => {
-    // Note: These tests would be more complex in a real implementation
-    // as they'd need to test the actual circuit breaker behavior
-    
-    it('should track failures and open circuit after threshold', async () => {
-      // This would test that after 5 failures, the circuit opens
-      // and subsequent requests fail immediately
-    });
-
-    it('should reset circuit after timeout', async () => {
-      // This would test that the circuit resets after the timeout period
     });
   });
 

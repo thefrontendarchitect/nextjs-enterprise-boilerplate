@@ -4,6 +4,7 @@ import React, { Component, ReactNode } from 'react';
 import { Button } from '@/shared/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/shared/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { logError, getErrorMessage } from '@/shared/lib/api/errors';
 
 interface Props {
   children: ReactNode;
@@ -27,7 +28,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    logError(error, { context: 'ErrorBoundary', errorInfo });
     this.props.onError?.(error, errorInfo);
   }
 
@@ -48,13 +49,9 @@ export class ErrorBoundary extends Component<Props, State> {
             <AlertTitle>Error</AlertTitle>
             <AlertDescription className="mt-2">
               <p className="mb-2">
-                {this.state.error?.message || 'Something went wrong'}
+                {this.state.error ? getErrorMessage(this.state.error) : 'Something went wrong'}
               </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={this.handleReset}
-              >
+              <Button variant="outline" size="sm" onClick={this.handleReset}>
                 Try again
               </Button>
             </AlertDescription>

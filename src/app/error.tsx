@@ -3,10 +3,17 @@
 import { useEffect } from 'react';
 import { Button } from '@/shared/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/shared/components/ui/alert';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/shared/components/ui/card';
 import { AlertCircle, RefreshCw, Home } from 'lucide-react';
 import Link from 'next/link';
 import { captureException } from '@/shared/lib/monitoring/sentry';
+import { logError, getErrorMessage } from '@/shared/lib/api/errors';
 
 export default function Error({
   error,
@@ -17,12 +24,12 @@ export default function Error({
 }) {
   useEffect(() => {
     // Log the error to an error reporting service
-    console.error('Application error:', error);
+    logError(error, { context: 'Application error page' });
     captureException(error);
   }, [error]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -38,17 +45,11 @@ export default function Error({
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error Details</AlertTitle>
             <AlertDescription className="mt-2">
-              <p className="font-mono text-sm">
-                {error.message || 'An unexpected error occurred'}
-              </p>
-              {error.digest && (
-                <p className="text-xs mt-2 opacity-70">
-                  Error ID: {error.digest}
-                </p>
-              )}
+              <p className="font-mono text-sm">{getErrorMessage(error)}</p>
+              {error.digest && <p className="mt-2 text-xs opacity-70">Error ID: {error.digest}</p>}
             </AlertDescription>
           </Alert>
-          
+
           <div className="flex gap-2">
             <Button onClick={reset} className="flex-1">
               <RefreshCw className="mr-2 h-4 w-4" />
@@ -61,8 +62,8 @@ export default function Error({
               </Link>
             </Button>
           </div>
-          
-          <p className="text-xs text-muted-foreground text-center">
+
+          <p className="text-center text-xs text-muted-foreground">
             If this problem persists, please contact support with the error ID above.
           </p>
         </CardContent>

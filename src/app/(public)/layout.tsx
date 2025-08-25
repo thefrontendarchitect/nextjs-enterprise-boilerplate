@@ -2,14 +2,10 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/modules/auth/context/auth-context';
+import { useAuthState } from '@/modules/auth/hooks/use-auth';
 
-export default function PublicLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const { isAuthenticated, isLoading } = useAuth();
+export default function PublicLayout({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuthState();
   const router = useRouter();
 
   useEffect(() => {

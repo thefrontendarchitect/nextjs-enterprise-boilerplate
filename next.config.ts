@@ -1,5 +1,9 @@
-import type { NextConfig } from "next";
-import { env } from './src/config/env';
+import type { NextConfig } from 'next';
+import bundleAnalyzer from '@next/bundle-analyzer';
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+});
 
 // Content Security Policy
 const ContentSecurityPolicy = `
@@ -10,65 +14,75 @@ const ContentSecurityPolicy = `
   font-src 'self' data:;
   img-src 'self' data: https: blob:;
   media-src 'self';
-  connect-src 'self' ${env.NEXT_PUBLIC_API_URL} https://*.sentry.io wss://*.sentry.io;
+  connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'} https://*.sentry.io wss://*.sentry.io;
   object-src 'none';
   base-uri 'self';
   form-action 'self';
   frame-ancestors 'none';
   upgrade-insecure-requests;
-`.replace(/\s{2,}/g, ' ').trim();
+`
+  .replace(/\s{2,}/g, ' ')
+  .trim();
 
 const securityHeaders = [
   {
     key: 'X-DNS-Prefetch-Control',
-    value: 'on'
+    value: 'on',
   },
   {
     key: 'Strict-Transport-Security',
-    value: 'max-age=63072000; includeSubDomains; preload'
+    value: 'max-age=63072000; includeSubDomains; preload',
   },
   {
     key: 'X-Frame-Options',
-    value: 'SAMEORIGIN'
+    value: 'SAMEORIGIN',
   },
   {
     key: 'X-Content-Type-Options',
-    value: 'nosniff'
+    value: 'nosniff',
   },
   {
     key: 'X-XSS-Protection',
-    value: '1; mode=block'
+    value: '1; mode=block',
   },
   {
     key: 'Referrer-Policy',
-    value: 'strict-origin-when-cross-origin'
+    value: 'strict-origin-when-cross-origin',
   },
   {
     key: 'Permissions-Policy',
-    value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()'
+    value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
   },
   {
     key: 'Content-Security-Policy',
-    value: ContentSecurityPolicy
-  }
+    value: ContentSecurityPolicy,
+  },
 ];
 
 const nextConfig: NextConfig = {
   // React configuration
   reactStrictMode: true,
-  
+
   // Compiler configuration (SWC is enabled by default in Next.js 15)
   compiler: {
     // Remove console logs in production
-    removeConsole: env.NODE_ENV === 'production' ? {
-      exclude: ['error', 'warn'],
-    } : false,
+    removeConsole:
+      process.env.NODE_ENV === 'production'
+        ? {
+            exclude: ['error', 'warn'],
+          }
+        : false,
   },
-  
+
+  // Bundle optimization
+  webpack: (config, { isServer: _isServer }) => {
+    return config;
+  },
+
   // Performance optimizations
   compress: true,
   poweredByHeader: false,
-  
+
   // Image optimization
   images: {
     domains: ['localhost', 'api.example.com'],
@@ -77,13 +91,13 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60,
   },
-  
+
   // Experimental features
   experimental: {
     optimizeCss: true,
     scrollRestoration: true,
   },
-  
+
   // Headers configuration
   async headers() {
     return [
@@ -95,14 +109,21 @@ const nextConfig: NextConfig = {
         source: '/api/:path*',
         headers: [
           { key: 'Access-Control-Allow-Credentials', value: 'true' },
-          { key: 'Access-Control-Allow-Origin', value: env.NEXT_PUBLIC_APP_URL },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+          },
           { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT' },
-          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, X-Request-ID' },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value:
+              'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, X-Request-ID',
+          },
         ],
       },
     ];
   },
-  
+
   // Redirects
   async redirects() {
     return [
@@ -113,27 +134,16 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  
-  // Webpack configuration
-  webpack(config, { dev, isServer }) {
-    // Enable source maps in production
-    if (!dev && !isServer) {
-      config.devtool = 'source-map';
-    }
-    
-    // Add any custom webpack config here
-    return config;
-  },
-  
+
   // Output configuration
   output: 'standalone',
-  
+
   // TypeScript configuration
   typescript: {
     // Don't fail build on TypeScript errors in production
     ignoreBuildErrors: false,
   },
-  
+
   // ESLint configuration
   eslint: {
     // Run ESLint during build
@@ -141,15 +151,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-// Bundle analyzer configuration
-if (env.ANALYZE === true) {
-  const withBundleAnalyzer = require('@next/bundle-analyzer')({
-    enabled: true,
-    openAnalyzer: true,
-  });
-  module.exports = withBundleAnalyzer(nextConfig);
-} else {
-  module.exports = nextConfig;
-}
+// Apply bundle analyzer if ANALYZE is set
+const finalConfig = process.env.ANALYZE === 'true' ? withBundleAnalyzer(nextConfig) : nextConfig;
 
-export default nextConfig;
+export default finalConfig;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+// useRouter not needed - handled by useAuth hook
 import { LogOut } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import {
@@ -14,9 +14,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/shared/components/ui/alert-dialog';
-import { useAuthStore } from '../stores/auth-store';
-import { authService } from '@/shared/services/auth.service';
-import { useToast } from '@/shared/hooks/use-toast';
+import { useAuth } from '../hooks/use-auth';
+// Simplified logout button using unified auth hook
 
 interface LogoutButtonProps {
   showIcon?: boolean;
@@ -35,42 +34,17 @@ export function LogoutButton({
 }: LogoutButtonProps) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const router = useRouter();
-  const logout = useAuthStore((state) => state.logout);
-  const { toast } = useToast();
+  // Router not needed - handled by useAuth hook
+  const { logout } = useAuth();
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
-    
-    try {
-      // Call logout API
-      const result = await authService.logout();
-      
-      if (result.success) {
-        // Clear client state
-        logout();
-        
-        // Show success toast
-        toast({
-          title: 'Logged out',
-          description: 'You have been successfully logged out.',
-        });
-        
-        // Redirect to login
-        router.push('/login');
-      } else {
-        throw new Error(result.error?.message || 'Logout failed');
-      }
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Logout failed',
-        description: error instanceof Error ? error.message : 'An error occurred',
-      });
-    } finally {
-      setIsLoggingOut(false);
-      setShowConfirmDialog(false);
-    }
+
+    // Use the unified logout method
+    await logout();
+
+    setIsLoggingOut(false);
+    setShowConfirmDialog(false);
   };
 
   const onLogoutClick = () => {
@@ -103,9 +77,7 @@ export function LogoutButton({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isLoggingOut}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={isLoggingOut}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleLogout}
               disabled={isLoggingOut}

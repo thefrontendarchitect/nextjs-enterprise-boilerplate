@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../context/auth-context';
+import { useAuthState } from '../hooks/use-auth';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 
 interface ProtectedRouteProps {
@@ -11,12 +11,8 @@ interface ProtectedRouteProps {
   fallback?: React.ReactNode;
 }
 
-export function ProtectedRoute({ 
-  children, 
-  redirectTo = '/login',
-  fallback 
-}: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+export function ProtectedRoute({ children, redirectTo = '/login', fallback }: ProtectedRouteProps) {
+  const { isAuthenticated, isLoading } = useAuthState();
   const router = useRouter();
 
   useEffect(() => {

@@ -17,7 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avat
 import { Badge } from '@/shared/components/ui/badge';
 import { ThemeSwitcher } from '@/shared/components/theme-switcher';
 import { LanguageSwitcher } from '@/shared/components/language-switcher';
-import { authService } from '@/shared/services/auth.service';
+import { useAuth } from '@/modules/auth/hooks/use-auth';
 import {
   Search,
   Bell,
@@ -46,21 +46,22 @@ export function PortalHeader() {
   const router = useRouter();
   const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { logout } = useAuth();
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
-    try {
-      await authService.logout();
-      router.push('/login');
-    } catch (error) {
-      console.error('Logout failed:', error);
-      setIsLoggingOut(false);
-    }
+    await logout();
+    setIsLoggingOut(false);
   };
 
   // Mock notifications
   const notifications = [
-    { id: 1, title: 'New message', description: 'You have a new message from John', time: '5m ago' },
+    {
+      id: 1,
+      title: 'New message',
+      description: 'You have a new message from John',
+      time: '5m ago',
+    },
     { id: 2, title: 'Server update', description: 'Server maintenance scheduled', time: '1h ago' },
     { id: 3, title: 'Payment received', description: 'Payment of $250 received', time: '2h ago' },
   ];
@@ -69,7 +70,7 @@ export function PortalHeader() {
     <header className="sticky top-0 z-40 h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-full items-center px-4">
         {/* Search Bar */}
-        <div className="flex items-center flex-1 max-w-md">
+        <div className="flex max-w-md flex-1 items-center">
           <Button
             variant="outline"
             className="relative w-full justify-start text-sm text-muted-foreground"
@@ -86,17 +87,17 @@ export function PortalHeader() {
         {/* Right side actions */}
         <div className="ml-auto flex items-center space-x-2">
           {/* Quick Stats */}
-          <div className="hidden lg:flex items-center space-x-4 mr-4">
+          <div className="mr-4 hidden items-center space-x-4 lg:flex">
             <div className="flex items-center space-x-2">
-              <Activity className="h-4 w-4 text-green-500" />
+              <Activity className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               <span className="text-sm">98.2%</span>
             </div>
             <div className="flex items-center space-x-2">
-              <Users className="h-4 w-4 text-blue-500" />
+              <Users className="h-4 w-4 text-primary" />
               <span className="text-sm">1,234</span>
             </div>
             <div className="flex items-center space-x-2">
-              <CreditCard className="h-4 w-4 text-purple-500" />
+              <CreditCard className="h-4 w-4 text-primary" />
               <span className="text-sm">$45.2k</span>
             </div>
           </div>
@@ -137,7 +138,7 @@ export function PortalHeader() {
           {/* Messages */}
           <Button variant="ghost" size="icon" className="relative">
             <MessageSquare className="h-4 w-4" />
-            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] font-medium text-white flex items-center justify-center">
+            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground">
               2
             </span>
           </Button>
@@ -147,7 +148,7 @@ export function PortalHeader() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-4 w-4" />
-                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] font-medium text-white flex items-center justify-center">
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground">
                   3
                 </span>
               </Button>
@@ -196,9 +197,7 @@ export function PortalHeader() {
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">Test User</p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    test@example.com
-                  </p>
+                  <p className="text-xs leading-none text-muted-foreground">test@example.com</p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
@@ -239,27 +238,52 @@ export function PortalHeader() {
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup heading="Suggestions">
-            <CommandItem onSelect={() => { router.push('/dashboard'); setIsCommandOpen(false); }}>
+            <CommandItem
+              onSelect={() => {
+                router.push('/dashboard');
+                setIsCommandOpen(false);
+              }}
+            >
               <Activity className="mr-2 h-4 w-4" />
               <span>Dashboard</span>
             </CommandItem>
-            <CommandItem onSelect={() => { router.push('/portal/components/forms/basic'); setIsCommandOpen(false); }}>
+            <CommandItem
+              onSelect={() => {
+                router.push('/portal/components/forms/basic');
+                setIsCommandOpen(false);
+              }}
+            >
               <Grid3x3 className="mr-2 h-4 w-4" />
               <span>Forms</span>
             </CommandItem>
-            <CommandItem onSelect={() => { router.push('/portal/components/tables'); setIsCommandOpen(false); }}>
+            <CommandItem
+              onSelect={() => {
+                router.push('/portal/components/tables');
+                setIsCommandOpen(false);
+              }}
+            >
               <Grid3x3 className="mr-2 h-4 w-4" />
               <span>Tables</span>
             </CommandItem>
           </CommandGroup>
           <CommandSeparator />
           <CommandGroup heading="Settings">
-            <CommandItem onSelect={() => { router.push('/user/profile'); setIsCommandOpen(false); }}>
+            <CommandItem
+              onSelect={() => {
+                router.push('/user/profile');
+                setIsCommandOpen(false);
+              }}
+            >
               <User className="mr-2 h-4 w-4" />
               <span>Profile</span>
               <CommandShortcut>⌘P</CommandShortcut>
             </CommandItem>
-            <CommandItem onSelect={() => { router.push('/user/settings'); setIsCommandOpen(false); }}>
+            <CommandItem
+              onSelect={() => {
+                router.push('/user/settings');
+                setIsCommandOpen(false);
+              }}
+            >
               <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>
               <CommandShortcut>⌘S</CommandShortcut>

@@ -2,7 +2,7 @@ import { ReactElement, ReactNode } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/shared/components/theme-provider';
-import { AuthProvider } from '@/modules/auth/context/auth-context';
+// Auth is now handled by Zustand stores - no provider needed
 import { I18nProvider } from '@/shared/lib/i18n/client';
 import { AnnouncerProvider } from '@/shared/lib/accessibility/announcer';
 import type { Locale } from '@/shared/lib/i18n/config';
@@ -12,12 +12,8 @@ import type { Locale } from '@/shared/lib/i18n/config';
  */
 interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
   locale?: Locale;
-  messages?: Record<string, any>;
+  messages?: Record<string, string | Record<string, string>>;
   queryClient?: QueryClient;
-  initialAuth?: {
-    isAuthenticated: boolean;
-    user?: any;
-  };
 }
 
 function createTestQueryClient() {
@@ -35,27 +31,23 @@ function createTestQueryClient() {
   });
 }
 
-function AllTheProviders({ 
+function AllTheProviders({
   children,
   locale = 'en',
   messages = {},
   queryClient = createTestQueryClient(),
-}: { 
+}: {
   children: ReactNode;
   locale?: Locale;
-  messages?: Record<string, any>;
+  messages?: Record<string, string | Record<string, string>>;
   queryClient?: QueryClient;
 }) {
   return (
     <I18nProvider initialLocale={locale} initialMessages={messages}>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <ThemeProvider>
-            <AnnouncerProvider>
-              {children}
-            </AnnouncerProvider>
-          </ThemeProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AnnouncerProvider>{children}</AnnouncerProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </I18nProvider>
   );
@@ -63,20 +55,11 @@ function AllTheProviders({
 
 export function customRender(
   ui: ReactElement,
-  {
-    locale = 'en',
-    messages = {},
-    queryClient,
-    ...renderOptions
-  }: CustomRenderOptions = {}
+  { locale = 'en', messages = {}, queryClient, ...renderOptions }: CustomRenderOptions = {}
 ) {
   return render(ui, {
     wrapper: ({ children }) => (
-      <AllTheProviders 
-        locale={locale} 
-        messages={messages}
-        queryClient={queryClient}
-      >
+      <AllTheProviders locale={locale} messages={messages} queryClient={queryClient}>
         {children}
       </AllTheProviders>
     ),
@@ -87,11 +70,14 @@ export function customRender(
 /**
  * Create mock API responses for testing
  */
-export function createMockApiResponse<T>(data: T, options?: {
-  status?: number;
-  headers?: Record<string, string>;
-  delay?: number;
-}) {
+export function createMockApiResponse<T>(
+  data: T,
+  options?: {
+    status?: number;
+    headers?: Record<string, string>;
+    delay?: number;
+  }
+) {
   const response = new Response(JSON.stringify(data), {
     status: options?.status ?? 200,
     headers: {
@@ -112,11 +98,7 @@ export function createMockApiResponse<T>(data: T, options?: {
 /**
  * Create mock error responses for testing
  */
-export function createMockErrorResponse(
-  message: string,
-  status: number = 500,
-  code?: string
-) {
+export function createMockErrorResponse(message: string, status: number = 500, code?: string) {
   return new Response(
     JSON.stringify({
       error: message,
@@ -185,7 +167,9 @@ export function setupMockLocalStorage() {
 /**
  * Create mock user for testing
  */
-export function createMockUser(overrides?: Partial<any>) {
+import type { User } from '@/shared/types/auth';
+
+export function createMockUser(overrides?: Partial<User>): User {
   return {
     id: 'test-user-id',
     email: 'test@example.com',
